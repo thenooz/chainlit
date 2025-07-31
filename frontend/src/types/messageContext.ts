@@ -15,6 +15,7 @@ interface IMessageContext {
   askUser?: IAsk;
   editable: boolean;
   loading: boolean;
+  isStreaming?: boolean;
   showFeedbackButtons: boolean;
   uiName: string;
   allowHtml?: boolean;

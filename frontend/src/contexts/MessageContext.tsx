@@ -11,7 +11,8 @@ const defaultMessageContext = {
   showFeedbackButtons: true,
   onError: () => undefined,
   uiName: '',
-  cot: 'hidden' as const
+  cot: 'hidden' as const,
+  isStreaming: false
 };
 
 const MessageContext = createContext<IMessageContext>(defaultMessageContext);

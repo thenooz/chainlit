@@ -27,7 +27,7 @@ interface Props {
 const MessagesContainer = ({ navigate }: Props) => {
   const apiClient = useContext(ChainlitContext);
   const { config } = useConfig();
-  const { elements, askUser, loading, actions } = useChatData();
+  const { elements, askUser, loading, actions, isStreaming } = useChatData();
   const { messages } = useChatMessages();
   const { uploadFile: _uploadFile } = useChatInteract();
   const setMessages = useSetRecoilState(messagesState);
@@ -130,7 +130,8 @@ const MessagesContainer = ({ navigate }: Props) => {
       onElementRefClick,
       onError,
       onFeedbackUpdated,
-      onFeedbackDeleted
+      onFeedbackDeleted,
+      isStreaming
     };
   }, [
     askUser,
@@ -141,7 +142,8 @@ const MessagesContainer = ({ navigate }: Props) => {
     config?.features?.unsafe_allow_html,
     onElementRefClick,
     onError,
-    onFeedbackUpdated
+    onFeedbackUpdated,
+    isStreaming
   ]);
 
   return (

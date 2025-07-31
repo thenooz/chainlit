@@ -25,6 +25,8 @@ export default function ScrollContainer({
   children,
   className
 }: Props) {
+  // Get streaming state from MessageContext
+  const { isStreaming } = require('@/contexts/MessageContext').MessageContext._currentValue;
   const ref = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const lastUserMessageRef = useRef<HTMLDivElement | null>(null);
@@ -35,6 +37,9 @@ export default function ScrollContainer({
   // Calculate and update spacer height
   const updateSpacerHeight = useCallback(() => {
     if (!ref.current) return;
+
+    // Prevent scrolling during streaming
+    if (isStreaming) return;
 
     if (autoScrollUserMessage && lastUserMessageRef.current) {
       const containerHeight = ref.current.clientHeight;
