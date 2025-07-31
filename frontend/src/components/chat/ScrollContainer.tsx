@@ -1,3 +1,4 @@
+import { MessageContext } from '@/contexts/MessageContext';
 import { cn } from '@/lib/utils';
 import { ArrowDown } from 'lucide-react';
 import {
@@ -7,6 +8,7 @@ import {
   useRef,
   useState
 } from 'react';
+import { useContext } from 'react';
 
 import { useChatMessages } from '@chainlit/react-client';
 
@@ -26,7 +28,7 @@ export default function ScrollContainer({
   className
 }: Props) {
   // Get streaming state from MessageContext
-  const { isStreaming } = require('@/contexts/MessageContext').MessageContext._currentValue;
+  const { isStreaming } = useContext(MessageContext);
   const ref = useRef<HTMLDivElement>(null);
   const spacerRef = useRef<HTMLDivElement>(null);
   const lastUserMessageRef = useRef<HTMLDivElement | null>(null);
