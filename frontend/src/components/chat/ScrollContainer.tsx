@@ -36,45 +36,47 @@ export default function ScrollContainer({
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
 
-  // Calculate and update spacer height
+  // Calculate and update spacer height to keep last user message visible
   const updateSpacerHeight = useCallback(() => {
-    if (!ref.current) return;
+    if (!ref.current || !lastUserMessageRef.current) return;
 
-    // Prevent scrolling during streaming
-    if (isStreaming) return;
+    // Only adjust scroll position for new user messages, not during streaming
+    if (!autoScrollUserMessage) return;
 
-    if (autoScrollUserMessage && lastUserMessageRef.current) {
-      const containerHeight = ref.current.clientHeight;
-      const lastMessageHeight = lastUserMessageRef.current.offsetHeight;
+    const containerHeight = ref.current.clientHeight;
+    const lastMessageHeight = lastUserMessageRef.current.offsetHeight;
 
-      // Calculate the height of all elements after the last user message
-      let afterMessagesHeight = 0;
-      let currentElement = lastUserMessageRef.current.nextElementSibling;
+    // Calculate the height of all elements after the last user message
+    let afterMessagesHeight = 0;
+    let currentElement = lastUserMessageRef.current.nextElementSibling;
 
-      // Iterate through all siblings after the last user message
-      while (currentElement && currentElement !== spacerRef.current) {
-        afterMessagesHeight += (currentElement as HTMLElement).offsetHeight;
-        currentElement = currentElement.nextElementSibling;
-      }
+    // Iterate through all siblings after the last user message
+    while (currentElement && currentElement !== spacerRef.current) {
+      afterMessagesHeight += (currentElement as HTMLElement).offsetHeight;
+      currentElement = currentElement.nextElementSibling;
+    }
 
-      // Position the last user message at the top with some padding
-      // Subtract both the message height and the height of any messages after it
-      const newSpacerHeight =
-        containerHeight - lastMessageHeight - afterMessagesHeight - 32;
+    // Position the last user message at the top with some padding
+    // Subtract both the message height and the height of any messages after it
+    const newSpacerHeight =
+      containerHeight - lastMessageHeight - afterMessagesHeight - 32;
 
-      // Only set a positive spacer height
-      if (spacerRef.current) {
-        spacerRef.current.style.height = `${Math.max(0, newSpacerHeight)}px`;
-      }
+    // Only set a positive spacer height
+    if (spacerRef.current) {
+      spacerRef.current.style.height = `${Math.max(0, newSpacerHeight)}px`;
+    }
 
-      // Scroll to position the message at the top
-      if (afterMessagesHeight === 0) {
-        scrollToPosition();
-      } else if (autoScrollRef?.current) {
-        ref.current.scrollTop = ref.current.scrollHeight;
-      }
-    } else if (autoScrollRef?.current) {
-      ref.current.scrollTop = ref.current.scrollHeight;
+    // Only scroll to position if this is a new user message
+    if (!isStreaming) {
+      scrollToPosition();
+    } else {
+      // During streaming, maintain the current scroll position
+      const currentScroll = ref.current.scrollTop;
+      setTimeout(() => {
+        if (ref.current) {
+          ref.current.scrollTop = currentScroll;
+        }
+      }, 0);
     }
   }, [autoScrollUserMessage, autoScrollRef]);
 
