@@ -63,18 +63,15 @@ export default function ScrollContainer({
       spacerRef.current.style.height = `${Math.max(0, newSpacerHeight)}px`;
     }
 
-    // Don't auto-scroll during streaming responses
+    // Maintain scroll position during streaming, otherwise allow normal behavior
     if (isStreaming) {
-      return;
+      const currentScroll = ref.current.scrollTop;
+      setTimeout(() => {
+        if (ref.current) {
+          ref.current.scrollTop = currentScroll;
+        }
+      }, 0);
     }
-
-    // For non-streaming updates, maintain the last scroll position
-    const currentScroll = ref.current.scrollTop;
-    setTimeout(() => {
-      if (ref.current) {
-        ref.current.scrollTop = currentScroll;
-      }
-    }, 0);
   }, [autoScrollUserMessage, autoScrollRef]);
 
   // Find and set a ref to the last user message element and handle auto-scrolling
@@ -95,14 +92,13 @@ export default function ScrollContainer({
         userMessages.length - 1
       ] as HTMLDivElement;
 
-      // Check if this is a new user message
-      const isNewUserMessage = lastUserMessage !== lastUserMessageRef.current;
-      lastUserMessageRef.current = lastUserMessage;
-
-      // Only scroll to top for new user messages
-      if (isNewUserMessage && !isStreaming) {
+      // If this is a user message and we're not streaming, scroll to it
+      if (!isStreaming) {
+        lastUserMessageRef.current = lastUserMessage;
         scrollToPosition();
-        return;
+      } else {
+        // During streaming, just update the reference without scrolling
+        lastUserMessageRef.current = lastUserMessage;
       }
 
       // Update spacer height when last user message is found
