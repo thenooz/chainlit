@@ -38,73 +38,65 @@ export default function ScrollContainer({
 
   // Calculate and update spacer height to keep last user message visible
   const updateSpacerHeight = useCallback(() => {
-    if (!ref.current || !lastUserMessageRef.current) return;
+    if (!ref.current || !lastUserMessageRef.current || !spacerRef.current)
+      return;
 
-    const containerHeight = ref.current.clientHeight;
-    const lastMessageHeight = lastUserMessageRef.current.offsetHeight;
-
-    // Calculate the height of all elements after the last user message
-    let afterMessagesHeight = 0;
-    let currentElement = lastUserMessageRef.current.nextElementSibling;
-
-    // Iterate through all siblings after the last user message
-    while (currentElement && currentElement !== spacerRef.current) {
-      afterMessagesHeight += (currentElement as HTMLElement).offsetHeight;
-      currentElement = currentElement.nextElementSibling;
-    }
-
-    // Position the last user message at the top with some padding
-    // Subtract both the message height and the height of any messages after it
-    const newSpacerHeight =
-      containerHeight - lastMessageHeight - afterMessagesHeight - 32;
-
-    // Only set a positive spacer height
-    if (spacerRef.current) {
-      spacerRef.current.style.height = `${Math.max(0, newSpacerHeight)}px`;
-    }
-
-    // Maintain scroll position during streaming, otherwise allow normal behavior
+    // Only adjust spacer when streaming to keep the user message fixed at top
     if (isStreaming) {
-      const currentScroll = ref.current.scrollTop;
-      setTimeout(() => {
-        if (ref.current) {
-          ref.current.scrollTop = currentScroll;
-        }
-      }, 0);
-    }
-  }, [autoScrollUserMessage, autoScrollRef]);
+      const containerHeight = ref.current.clientHeight;
+      const lastMessageTop = lastUserMessageRef.current.offsetTop;
+      const lastMessageHeight = lastUserMessageRef.current.offsetHeight;
 
-  // Find and set a ref to the last user message element and handle auto-scrolling
+      // Calculate space needed to keep the message at top with some padding
+      const newSpacerHeight = Math.max(
+        0,
+        containerHeight - (lastMessageTop + lastMessageHeight) + 20
+      );
+
+      spacerRef.current.style.height = `${newSpacerHeight}px`;
+
+      // Keep the last user message in view
+      ref.current.scrollTop = lastMessageTop - 20;
+    } else {
+      // When not streaming, remove the spacer
+      spacerRef.current.style.height = '0px';
+    }
+  }, [isStreaming]);
+
+  // Handle message updates and scrolling
   useEffect(() => {
     if (!ref.current) return;
 
+    // Reset spacer if no messages
     if (messages.length === 0 && spacerRef.current) {
-      spacerRef.current.style.height = `0px`;
+      spacerRef.current.style.height = '0px';
       return;
     }
 
-    // Get all message elements
+    // Find all user messages
     const userMessages = ref.current.querySelectorAll(
       '[data-step-type="user_message"]'
     );
+
     if (userMessages.length > 0) {
       const lastUserMessage = userMessages[
         userMessages.length - 1
       ] as HTMLDivElement;
+      lastUserMessageRef.current = lastUserMessage;
 
-      // If this is a user message and we're not streaming, scroll to it
-      if (!isStreaming) {
-        lastUserMessageRef.current = lastUserMessage;
+      // If a new user message was added (length changed)
+      if (messages[messages.length - 1]?.type === 'user_message') {
+        // Scroll to position the message at the top
         scrollToPosition();
-      } else {
-        // During streaming, just update the reference without scrolling
-        lastUserMessageRef.current = lastUserMessage;
+      } else if (!isStreaming) {
+        // If not streaming and not a new user message, scroll to bottom
+        scrollToBottom();
       }
 
-      // Update spacer height when last user message is found
+      // Update spacer height to maintain position during streaming
       updateSpacerHeight();
     }
-  }, [messages, updateSpacerHeight]);
+  }, [messages, isStreaming, updateSpacerHeight]);
 
   // Add window resize listener to update spacer height
   useEffect(() => {
@@ -179,7 +171,8 @@ export default function ScrollContainer({
     if (!ref.current || !lastUserMessageRef.current) return;
 
     setIsScrolling(true);
-    // Scroll to position the last user message at the top with some padding
+
+    // Position the last user message at the top with padding
     const scrollPosition = lastUserMessageRef.current.offsetTop - 20;
 
     ref.current.scrollTo({
@@ -187,8 +180,12 @@ export default function ScrollContainer({
       behavior: 'smooth'
     });
 
-    setShowScrollButton(false);
-    checkScrollEnd();
+    // After scrolling to position, update the spacer to maintain the position
+    requestAnimationFrame(() => {
+      updateSpacerHeight();
+      setShowScrollButton(false);
+      checkScrollEnd();
+    });
   };
 
   const handleScroll = () => {
