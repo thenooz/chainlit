@@ -40,9 +40,6 @@ export default function ScrollContainer({
   const updateSpacerHeight = useCallback(() => {
     if (!ref.current || !lastUserMessageRef.current) return;
 
-    // Only adjust scroll position for new user messages, not during streaming
-    if (!autoScrollUserMessage) return;
-
     const containerHeight = ref.current.clientHeight;
     const lastMessageHeight = lastUserMessageRef.current.offsetHeight;
 
@@ -66,21 +63,21 @@ export default function ScrollContainer({
       spacerRef.current.style.height = `${Math.max(0, newSpacerHeight)}px`;
     }
 
-    // Only scroll to position if this is a new user message
-    if (!isStreaming) {
-      scrollToPosition();
-    } else {
-      // During streaming, maintain the current scroll position
-      const currentScroll = ref.current.scrollTop;
-      setTimeout(() => {
-        if (ref.current) {
-          ref.current.scrollTop = currentScroll;
-        }
-      }, 0);
+    // Don't auto-scroll during streaming responses
+    if (isStreaming) {
+      return;
     }
+
+    // For non-streaming updates, maintain the last scroll position
+    const currentScroll = ref.current.scrollTop;
+    setTimeout(() => {
+      if (ref.current) {
+        ref.current.scrollTop = currentScroll;
+      }
+    }, 0);
   }, [autoScrollUserMessage, autoScrollRef]);
 
-  // Find and set a ref to the last user message element
+  // Find and set a ref to the last user message element and handle auto-scrolling
   useEffect(() => {
     if (!ref.current) return;
 
@@ -97,7 +94,16 @@ export default function ScrollContainer({
       const lastUserMessage = userMessages[
         userMessages.length - 1
       ] as HTMLDivElement;
+
+      // Check if this is a new user message
+      const isNewUserMessage = lastUserMessage !== lastUserMessageRef.current;
       lastUserMessageRef.current = lastUserMessage;
+
+      // Only scroll to top for new user messages
+      if (isNewUserMessage && !isStreaming) {
+        scrollToPosition();
+        return;
+      }
 
       // Update spacer height when last user message is found
       updateSpacerHeight();
